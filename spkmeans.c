@@ -7,7 +7,7 @@
 //#include "kmeans.c"
 
 
-/
+
 int getlines(char arr[]) {  
     
     char ch;
@@ -137,7 +137,7 @@ double calculateWeight(double* a, double* b, int d)
     return exp(norm);
 }
 
-double** formWeightedMatrix(double** vectorsMatrix, int n, int d)// Yair
+double** formWeightedMatrix(double** vectorsMatrix, int n, int d)// Yairr
 
 {
     double * weightedMatrix =(double *) calloc (n,sizeof(double*));
