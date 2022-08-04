@@ -199,9 +199,23 @@ double** formDegreeMatrix (double** weightedMatrix, int n, int isRegularMode){ /
 
 }
 
-double** formLnormMatrix (double** weightedMatrix, int n){ // Guy
+double** multiplyMatrix(double** aMatrix, double** bMatrix){// Yair
 
 }
+
+double** formLnormMatrix (double** weightedMatrix, int n){ // Yair
+
+}
+
+double** jaccobiAlgorithm (double** lNormMatrix){ // Guy - to get K EigenVectors 
+
+}
+
+double** getUmatrix(double** Kvectors){ // Guy 
+
+}
+
+
 
 int main(int argc, char *argv[]){ // Guy
 
