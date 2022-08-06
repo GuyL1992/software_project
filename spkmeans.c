@@ -172,7 +172,7 @@ double** formWeightedMatrix(double** vectorsMatrix, int n, int d)// Yairr
  */
 
 double** formDegreeMatrix (double** weightedMatrix, int n, int isRegularMode){ // Yair
-    double * degreeMatrix =(double *) calloc (n,sizeof(double*));
+    double ** degreeMatrix =(double *) calloc (n,sizeof(double*));
     assert(degreeMatrix!=NULL && "An Error Has Occured");
     int k=0, row,col;
     double sum;
@@ -199,11 +199,54 @@ double** formDegreeMatrix (double** weightedMatrix, int n, int isRegularMode){ /
 }
 
 double** multiplyMatrix(double** aMatrix, double** bMatrix, int n){// Yair
-
+    double ** mulMatrix =(double *) calloc (n,sizeof(double*));
+    assert(mulMatrix!=NULL && "An Error Has Occured");
+    int k,i,j;
+    double sum;
+    for (k=0; k<n; k++){
+        mulMatrix[k] = calloc(n,sizeof(double));
+        assert( mulMatrix[k]!=NULL && "An Error Has Occured");
+    }
+    for(i=0;i<n;i++)
+    {
+        for(j=0;j<n;j++)
+        {
+            sum = 0;
+            for(k=0;k<n;k++)
+            {
+                result[i][j]+=aMatrix[i][k] * bMatrix[k][j];
+            }
+        }
+    }
+    return mulMatrix;
 }
 
-double** formLnormMatrix (double** weightedMatrix, int n){ // Yair
 
+
+
+
+double** formLnormMatrix (double** weightedMatrix,double** degreeSqrtMatrix, int n){ // Yair
+    double ** lNormMatrix ;
+    //assert(lNormMatrix!=NULL && "An Error Has Occured");
+    double ** temp = multiplyMatrix(degreeSqrtMatrix, weightedMatrix,n);
+    lNormMatrix = multiplyMatrix(temp, degreeSqrtMatrix,n);
+    int i=0,j=0;
+    for(i=0;i<n;i++)
+    {
+        for(j=0;j<n;j++)
+        {
+            if (i!=j)
+            {
+                lNormMatrix[i][j] = -lNormMatrix[i][j];
+                
+            }
+            else
+            {
+                lNormMatrix[i][i] = 1 - lNormMatrix[i][i];
+            }
+        }
+    }
+    return lNormMatrix;
 }
 
 void formRotaionMatrix(double** P ,double** lNormMatrix, int n){
