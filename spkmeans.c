@@ -240,7 +240,7 @@ void multiplyMatrix(double** result, double** aMatrix, double** bMatrix, int n){
             sum = 0;
             for(k=0;k<n;k++)
             {
-                result[i][j]+=aMatrix[i][k] * bMatrix[k][j];
+                mulMatrix[i][j]+=aMatrix[i][k] * bMatrix[k][j];
             }
         }
     }
@@ -253,7 +253,12 @@ void formLnormMatrix (double** lNormMatrix, double** weightedMatrix,double** deg
     multiplyMatrix(temp, degreeSqrtMatrix, weightedMatrix,n);
     multiplyMatrix(lNormMatrix, temp, degreeSqrtMatrix,n);
 
-    int i=0,j=0;
+double** formLnormMatrix (double** weightedMatrix,double** degreeSqrtMatrix, int n){ // Yair
+    double ** lNormMatrix ;
+    double ** temp = multiplyMatrix(degreeSqrtMatrix, weightedMatrix,n);
+    lNormMatrix = multiplyMatrix(temp, degreeSqrtMatrix,n);
+
+int i=0,j=0;
     for(i=0;i<n;i++)
     {
         for(j=0;j<n;j++)
@@ -575,6 +580,34 @@ void jaccobi_proccess(double** observation_matrix, int n, int d){
 }
 
      
+
+
+/**
+ * @brief This function determine the number of cluskers k. k is the max gap between two 
+ * following eingevalues, until half of the values.
+ * 
+ * @param eigenValues 
+ * @param len len of eingevalues.
+ * @return int - k 
+ */
+int TheEigengapHeuristic(double* eigenValues, int lenOfArr) {
+
+    int index=0;
+    double maxDelta = 0;
+    double delta = 0;
+    int i;
+    qsort(eigenValues,lenOfArr, sizeof(double),doubleCmpr);
+    for(i=1; i<=(lenOfArr/2);i++)
+    {
+        delta = eigenValues[i]-eigenValues[i-1];
+        if (delta > maxDelta){
+            maxDelta = delta;
+            index = i;
+        }
+    }
+    
+    return index;
+}
 
 
 
