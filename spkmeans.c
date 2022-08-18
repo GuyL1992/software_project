@@ -7,6 +7,8 @@
 //#include "kmeans.c"
 
 
+double** allocationMatrix(int n, int d);
+void freeMatrix(double** matrix,int n);
 
 int getlines(char arr[]) {  
     
@@ -111,6 +113,35 @@ double** formInputToMatrix(char* input, int n, int d){ //Guy
     return vectors;
 }
 
+
+int checkNegativeZero(double value)
+{
+    if (value>-0.00005 && value<0){ return 1;}
+    return 0;
+}
+
+void printMatrix2(double** matrix, int a, int b) {
+    int i,j;
+    for (i = 0; i < a; i++)
+    {
+        for (j = 0; j <  b - 1; j++)
+        {
+            if (checkNegativeZero(matrix[i][j])){
+                printf("0.0000,");
+            } else{
+                printf("%.4f,", matrix[i][j]);
+            }
+            
+        }
+        if (checkNegativeZero(matrix[i][b-1])){
+            printf("0.0000");
+        } else{
+            printf("%.4f", matrix[i][b-1]);
+        }
+        putchar('\n');
+    }
+}
+
 void printMatrix(double** matrix, int n, int d){
 
     for(int i = 0; i < n; i++){
@@ -122,30 +153,28 @@ void printMatrix(double** matrix, int n, int d){
     }
 }
 
+
 double calcWeight(double* a, double* b, int d)
 {
-    double sum = 0, norm=0;
+    double sum = 0, norm=0, currDiff;
     int i=0;
     for (i=0;i<d;i++)
     {
-        sum += (a[i]-b[i])*(a[i]-b[i]);
+        currDiff = (a[i]-b[i]) * (a[i]-b[i]);
+        sum = sum + currDiff;
     }
     norm = pow(sum,0.5);
     norm = -norm/2;
     return exp(norm);
 }
 
-double** formWeightedMatrix(double** vectorsMatrix, int n, int d)// Yairr
+void formWeightedMatrix(double** weightedMatrix,double** vectorsMatrix, int n, int d)// Yairr
 
 {
-    double** weightedMatrix =(double **) calloc (n,sizeof(double*));
-    assert(weightedMatrix!=NULL && "An Error Has Occured");
     double weight;
-    int i=0, row=0, col=0;
-    for (i=0; i<n; i++){
-        weightedMatrix[i] = calloc (n,sizeof(double));
-        assert( weightedMatrix[i]!=NULL && "An Error Has Occured");
-    }
+    int row;
+    int col;
+    
     for(row=0;row<n;row++)
     {
         for(col=row+1;col<n;col++)
@@ -155,7 +184,7 @@ double** formWeightedMatrix(double** vectorsMatrix, int n, int d)// Yairr
             weightedMatrix[col][row] = weight;
         }
     }
-    return weightedMatrix;
+    return;
 
 
 }
@@ -171,22 +200,16 @@ double** formWeightedMatrix(double** vectorsMatrix, int n, int d)// Yairr
  * @return double** 
  */
 
-double** formDegreeMatrix (double** weightedMatrix, int n, int isRegularMode){ // Yair
-    double ** degreeMatrix =(double *) calloc (n,sizeof(double*));
-    assert(degreeMatrix!=NULL && "An Error Has Occured");
+void formDegreeMatrix (double** degreeMatrix, double** weightedMatrix, int n, int isRegularMode){ // Yair
     int k=0, row,col;
     double sum;
-    for (k=0; k<n; k++){
-        degreeMatrix[k] = calloc(n,sizeof(double));
-        assert( degreeMatrix[k]!=NULL && "An Error Has Occured");
-    }
 
     for (row=0;row<n;row++){
         sum = 0;
         for (col=0;col<n;col++){
             sum += weightedMatrix[row][col];
         }
-        if (isRegularMode ==1){
+        if (isRegularMode == 1){
              degreeMatrix[row][row] =(sum);
         }
         else {
@@ -194,19 +217,22 @@ double** formDegreeMatrix (double** weightedMatrix, int n, int isRegularMode){ /
         }
        
     }
-    return degreeMatrix;
+    return;
 
 }
 
-double** multiplyMatrix(double** aMatrix, double** bMatrix, int n){// Yair
-    double ** mulMatrix =(double *) calloc (n,sizeof(double*));
-    assert(mulMatrix!=NULL && "An Error Has Occured");
+void multiplyMatrix(double** result, double** aMatrix, double** bMatrix, int n){// Yair
+    
     int k,i,j;
     double sum;
-    for (k=0; k<n; k++){
-        mulMatrix[k] = calloc(n,sizeof(double));
-        assert( mulMatrix[k]!=NULL && "An Error Has Occured");
+
+    for( i = 0; i < n; i++){
+        for(j = 0; j < n; j ++){
+            result[i][j] = 0;
+        }
     }
+
+    
     for(i=0;i<n;i++)
     {
         for(j=0;j<n;j++)
@@ -218,18 +244,15 @@ double** multiplyMatrix(double** aMatrix, double** bMatrix, int n){// Yair
             }
         }
     }
-    return mulMatrix;
+    return;
 }
 
+void formLnormMatrix (double** lNormMatrix, double** weightedMatrix,double** degreeSqrtMatrix, int n){ // Yair
 
+    double ** temp = allocationMatrix(n,n);
+    multiplyMatrix(temp, degreeSqrtMatrix, weightedMatrix,n);
+    multiplyMatrix(lNormMatrix, temp, degreeSqrtMatrix,n);
 
-
-
-double** formLnormMatrix (double** weightedMatrix,double** degreeSqrtMatrix, int n){ // Yair
-    double ** lNormMatrix ;
-    //assert(lNormMatrix!=NULL && "An Error Has Occured");
-    double ** temp = multiplyMatrix(degreeSqrtMatrix, weightedMatrix,n);
-    lNormMatrix = multiplyMatrix(temp, degreeSqrtMatrix,n);
     int i=0,j=0;
     for(i=0;i<n;i++)
     {
@@ -246,37 +269,52 @@ double** formLnormMatrix (double** weightedMatrix,double** degreeSqrtMatrix, int
             }
         }
     }
-    return lNormMatrix;
+    freeMatrix(temp,n);
+    return;
 }
 
-void formRotaionMatrix(double** P ,double** lNormMatrix, int n){
+void formRotaionMatrix(double** P ,double** A,double** matrixV, int n){
     // find the largest element off the diaginal
     int i;
     int j;
-    int maxRow = 0;
-    int maxCol = 0;
-    int maxValue;
+    int r;
+    int maxRow;
+    int maxCol;
+    double maxValue = 0;
     double s;
     double c; 
     double t;
     double theta;
     double sign;
 
+
+
     for (i = 0; i < n; i++){ // change for n / 2;
         for(j = 0; j < n; j++){
-            if((fabs(lNormMatrix[i][j]) > fabs(lNormMatrix[maxRow][maxCol])) && i != j ){
+            if(fabs(A[i][j]) > fabs(maxValue) && i != j ){
                 maxRow = i;
                 maxCol = j;
+                maxValue = A[maxRow][maxCol];
             }
         }
     }
 
-    theta = (lNormMatrix[maxCol][maxCol] - lNormMatrix[maxRow][maxRow]) / (2 * lNormMatrix[maxRow][maxCol]);
-    printf("%f\n",theta);
-    sign = theta < 0 ? : 1;
-    t = sign / (fabs(theta) + sqrt(pow(theta,2) + 1));
-    c = 1 / (sqrt(pow(t, 2) + 1));
-    s = t * c;
+    // theta = (A[maxCol][maxCol] - A[maxRow][maxRow]) / (2 * A[maxRow][maxCol]);
+    // sign = theta < 0 ? : 1;
+    // t = sign / (fabs(theta) + sqrt(pow(theta,2) + 1));
+    // c = 1 / (sqrt(pow(t, 2) + 1));
+    // s = t * c;
+
+    double tetha, signTetha, absTetha, t;
+    
+    tetha = (matrixA[j][j]-matrixA[i][i])/(2*matrixA[i][j]);
+    (tetha<0) ? (signTetha = -1) : (signTetha=1);
+    (tetha<0) ? (absTetha = -tetha) : (absTetha = tetha);
+    t = signTetha / (absTetha + pow((pow(tetha,2)+1),0.5));
+    c = 1/(pow((pow(t,2)+1),0.5));
+    s = t*(*c);
+
+   
 
     for (i = 0; i < n; i++){ // fill in the new  rotation matrix 
         for(j = 0; j < n; j++){
@@ -294,24 +332,63 @@ void formRotaionMatrix(double** P ,double** lNormMatrix, int n){
         }
     }
 
-    //printMatrix(P,n,n); 
-}
+    double *Icol, *Jcol;
+    i = maxRow;
+    j = maxCol;
+    double** matrixA = A;
 
-int isDiagonal(double** A, int n){
-    int i = 0;
-    int j = 0;
+    Icol = calloc(n,sizeof(double));
+    assert(Icol!=NULL && "An Error Has Occured");
+    Jcol = calloc(n,sizeof(double));
+    assert(Jcol!=NULL && "An Error Has Occured");
 
-    for(i = 0; i < n; i++){
-        for(j = 0; j < n; j++){
-            if(j != i && A[i][j] != 0){
-                return 0;
-            }
-
+    for (r=0;r<n;r++)
+    {
+        Icol[r] = matrixA[r][i];
+        Jcol[r] = matrixA[r][j];
+    }
+    for(r=0; r<n;r++)
+    {
+        if(r!=i && r!=j)
+        {
+            matrixA[r][i] = c*Icol[r] - s*Jcol[r];
+            matrixA[i][r] = matrixA[r][i];
+            matrixA[r][j] = c*Jcol[r] + s* Icol[r];
+            matrixA[j][r] = matrixA[r][j];
         }
     }
-    return 1;
 
+    matrixA[i][i] = pow(c,2)*Icol[i] + pow(s,2)*Jcol[j] - 2 * s * c * Jcol[i];
+    matrixA[j][j] = pow(s,2) *Icol[i] + pow(c,2) * Jcol[j] + 2 * s * c * Jcol[i];
+    matrixA[i][j] = 0;
+    matrixA[j][i] = 0;
+    
+    free(Icol);
+    free(Jcol);
+
+    Icol = calloc(n,sizeof(double));
+    assert(Icol!=NULL && "An Error Has Occured");
+    Jcol = calloc(n,sizeof(double));
+    assert(Jcol!=NULL && "An Error Has Occured");
+
+    for (r=0;r<n;r++)
+    {
+        Icol[r] = matrixV[r][i];
+        Jcol[r] = matrixV[r][j];
+    }
+    for (r=0;r<n;r++)
+    {
+        matrixV[r][i] = c*Icol[r] - s*Jcol[r];
+        matrixV[r][j] = s*Icol[r] + c*Jcol[r];
+    }
+    free(Icol);
+    free(Jcol);
+
+    return;
 }
+
+   
+
 
 void formIdentityMatrix(double** V, int n){ //Guy
 
@@ -337,63 +414,167 @@ double ** getTransposeMatrix(double** matrix, int n){
     return matrix;
 }
 
-double** getSimilarMatrix(double** A, double** P,int n){
+void getSimilarMatrix(double** A, double** P,double** temp, int n){
 
     double** Pt;
-    A = multiplyMatrix(A,P,n);
-    P = getTransposeMatrix(P,n);
-    return (multiplyMatrix(Pt,A,n));
+    multiplyMatrix(temp,A,P,n);
+    Pt = getTransposeMatrix(P,n);
+    multiplyMatrix(A,Pt,temp,n);
+    
+    return ;
 
 }
 
-double** jaccobiAlgorithm (double** lNormMatrix , int n){ // Guy - get All the eigenValues
+double getOff(double ** A, int n){
+    double offA = 0;
+    int i = 0;
+    int j = 0;
+
+    for(i=0;i<n;i++)
+    {
+        for(j=i+1;j<n;j++)
+        {
+            offA += 2 * pow(A[i][j],2);
+        }
+    }
+
+    return offA;
+}
+
+void copyMatrix (double** A, double** B, int n){
+    int i;
+    int j;
+
+    for(i = 0; i < n; i++){
+        for (j = 0; j < n; j ++){
+            A[i][j] = B[i][j];
+        }
+    }
+
+    return;
+}
+
+
+
+
+void jaccobiAlgorithm (double** eigenVectors, double** lNormMatrix , int n){ // Guy - get All the eigenValues
 
     int i;
     int j;
+    int iteration = 0;
     double** A = lNormMatrix;
+    double** V = eigenVectors;
+    double offA;
+    double offAtag = getOff(lNormMatrix,n);
+    double epsilon = pow(10,-15);
+    int stopCondition = 1;
 
-    double** eigenVectors = (double **) calloc (n,sizeof(double*));
-    assert(eigenVectors!=NULL && "An Error Has Occured");
+    double** P = allocationMatrix(n,n);
+    double** helperPointer;
+    double** temp = allocationMatrix(n,n);
+    double** Atag = allocationMatrix(n,n);
 
-    double** P = (double **) calloc (n,sizeof(double*));
-    assert(P!=NULL && "An Error Has Occured");
 
-    double** V = (double **) calloc (n,sizeof(double*));
-    assert(V!=NULL && "An Error Has Occured");
+
+    formIdentityMatrix(V,n); // first: V equal to the Identity matrix 
+
+
+
+    do{
+        offA = offAtag;
+        formRotaionMatrix(P,A,V,n);
+        // multiplyMatrix(temp,V,P,n);
+        // copyMatrix(V,temp,n);
+        // getSimilarMatrix(A,P,temp,n);
+        offAtag = getOff(A,n);
+        iteration ++;
+
+       if ((offA-offAtag)<epsilon)
+        {
+            stopCondition = 0;
+        }
+        if (offAtag==0) {break;}
+        
+
+
+
+    } while(stopCondition && iteration<100);
+
+    printMatrix2(V,n,n);
+    
+    freeMatrix(temp,n);
+    freeMatrix(P,n);
+
+    return;
+ 
+}
+
+void getUmatrix(double** Kvectors){ // Guy 
+    return;
+
+}
+
+double** allocationMatrix(int n, int d){
+
+    double** allocatedMatrix =(double **) calloc (n,sizeof(double*));
+    assert(allocatedMatrix!=NULL && "An Error Has Occured");
+    int i=0, row=0, col=0;
 
     for (i=0; i<n; i++){
-        P[i] = calloc (n,sizeof(double));
-        assert(P[i]!=NULL && "An Error Has Occured");
-        eigenVectors[i] = calloc (n,sizeof(double));
-        assert(eigenVectors[i]!=NULL && "An Error Has Occured");
-        V[i] = calloc (n,sizeof(double));
-        assert(P[i]!=NULL && "An Error Has Occured");
+        allocatedMatrix[i] = calloc (n,sizeof(double));
+        assert(allocatedMatrix[i]!=NULL && "An Error Has Occured");
     }
 
-    formIdentityMatrix(V,n);
-    return V;
+    return allocatedMatrix;
+}
 
-    int iteration = 100;
+void freeMatrix(double** matrix,int n){
 
-    while(isDiagonal(A, n) == 0 || iteration == 0){ // while A is not Diagonal
-        formRotaionMatrix(P,A,n);
-        V = multiplyMatrix(V,P,n);
-        A = getSimilarMatrix(A,P,n);
-        printMatrix(A,n,n);
+    int i=0;
 
-        iteration --;
+    for (i=0; i<n; i++){
+        free(matrix[i]); 
     }
 
-    // find the eigenVectors
+    free(matrix);
 
-    return V;
+    return;
+}
+   
+
+void jaccobi_proccess(double** observation_matrix, int n, int d){
+
+    int regularMode = 0;
+    double** weightedMatrix = allocationMatrix(n,n);
+    double** degreeMatrix = allocationMatrix(n,n);
+    double** lNormMatrix = allocationMatrix(n,n);
     
 
+    formWeightedMatrix(weightedMatrix,observation_matrix,n,d);
+    formDegreeMatrix(degreeMatrix,weightedMatrix,n,regularMode);
+    formLnormMatrix(lNormMatrix, weightedMatrix,degreeMatrix,n);
+
+    freeMatrix(weightedMatrix,n);
+    freeMatrix(degreeMatrix,n);
+
+    double** eigenVectors = allocationMatrix(n,n);
+    jaccobiAlgorithm(eigenVectors,lNormMatrix,n);
+
+    // printMatrix2(eigenVectors,n,n);
+
+    // 0.7071,-0.0065,-0.0121,0.7070
+    // 0.0013,0.7072,0.7068,0.0173
+    // -0.0004,-0.7070,0.7072,0.0061
+    // -0.7071,-0.0047,-0.0112,0.7070
+
+    // freeMatrix(lNormMatrix,n);
+    // freeMatrix(eigenVectors,n);
+
+    return;
+
 }
 
-double** getUmatrix(double** Kvectors){ // Guy 
-
-}
+     
 
 
 
@@ -413,6 +594,7 @@ int main(int argc, char *argv[]){ // Guy
     n = getlines(input);
     d = getDimention(input);
     observationsMatrix = formInputToMatrix(input, n,d);
+    jaccobi_proccess(observationsMatrix,n,d);
     return 0;
 
 }
