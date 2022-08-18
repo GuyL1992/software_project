@@ -6,7 +6,24 @@
 //#include "spkmeans.h"
 //#include "kmeans.c"
 
-
+int convertStringIntoGoalEnum(char* UserGoal)
+{
+    if (!strcmp(UserGoal,"spk"))
+    {
+        return 0;
+    } else if (!strcmp(UserGoal,"wam")){
+        return 1;
+    } else if (!strcmp(UserGoal, "ddg")){
+        return 2;
+    } else if (!strcmp(UserGoal,"lnorm")){
+        return 3;
+    } else if (!strcmp(UserGoal,"jacobi")){
+        return 4;
+    } else 
+    {
+        return 5;
+    };
+}
 double** allocationMatrix(int n, int d);
 void freeMatrix(double** matrix,int n);
 
@@ -240,7 +257,7 @@ void multiplyMatrix(double** result, double** aMatrix, double** bMatrix, int n){
             sum = 0;
             for(k=0;k<n;k++)
             {
-                mulMatrix[i][j]+=aMatrix[i][k] * bMatrix[k][j];
+                result[i][j]+=aMatrix[i][k] * bMatrix[k][j];
             }
         }
     }
@@ -252,11 +269,6 @@ void formLnormMatrix (double** lNormMatrix, double** weightedMatrix,double** deg
     double ** temp = allocationMatrix(n,n);
     multiplyMatrix(temp, degreeSqrtMatrix, weightedMatrix,n);
     multiplyMatrix(lNormMatrix, temp, degreeSqrtMatrix,n);
-
-double** formLnormMatrix (double** weightedMatrix,double** degreeSqrtMatrix, int n){ // Yair
-    double ** lNormMatrix ;
-    double ** temp = multiplyMatrix(degreeSqrtMatrix, weightedMatrix,n);
-    lNormMatrix = multiplyMatrix(temp, degreeSqrtMatrix,n);
 
 int i=0,j=0;
     for(i=0;i<n;i++)
@@ -310,14 +322,14 @@ void formRotaionMatrix(double** P ,double** A,double** matrixV, int n){
     // c = 1 / (sqrt(pow(t, 2) + 1));
     // s = t * c;
 
-    double tetha, signTetha, absTetha, t;
+    double tetha, signTetha, absTetha;
     
-    tetha = (matrixA[j][j]-matrixA[i][i])/(2*matrixA[i][j]);
+    tetha = (A[j][j]-A[i][i])/(2*A[i][j]);
     (tetha<0) ? (signTetha = -1) : (signTetha=1);
     (tetha<0) ? (absTetha = -tetha) : (absTetha = tetha);
     t = signTetha / (absTetha + pow((pow(tetha,2)+1),0.5));
     c = 1/(pow((pow(t,2)+1),0.5));
-    s = t*(*c);
+    s = t*(c);
 
    
 
@@ -462,18 +474,17 @@ void copyMatrix (double** A, double** B, int n){
 
 
 
-void jaccobiAlgorithm (double** eigenVectors, double** lNormMatrix , int n){ // Guy - get All the eigenValues
+void jaccobiAlgorithm (double** eigenVectors,double** observationsMatrix , int n){ // Guy - get All the eigenValues
 
     int i;
     int j;
     int iteration = 0;
-    double** A = lNormMatrix;
+    double** A = observationsMatrix;
     double** V = eigenVectors;
     double offA;
-    double offAtag = getOff(lNormMatrix,n);
+    double offAtag = getOff(A,n);
     double epsilon = pow(10,-15);
     int stopCondition = 1;
-
     double** P = allocationMatrix(n,n);
     double** helperPointer;
     double** temp = allocationMatrix(n,n);
@@ -482,8 +493,6 @@ void jaccobiAlgorithm (double** eigenVectors, double** lNormMatrix , int n){ // 
 
 
     formIdentityMatrix(V,n); // first: V equal to the Identity matrix 
-
-
 
     do{
         offA = offAtag;
@@ -547,33 +556,65 @@ void freeMatrix(double** matrix,int n){
 }
    
 
-void jaccobi_proccess(double** observation_matrix, int n, int d){
 
+
+void process_wam(double** observationMatrix, int n, int d){
+    double** weightedMatrix = allocationMatrix(n,n);
+    formWeightedMatrix(weightedMatrix,observationMatrix,n,d);
+    printMatrix2(weightedMatrix,n,n);
+    freeMatrix(weightedMatrix,n);
+}
+
+void process_ddg (double** observationMatrix, int n, int d){
+    double** weightedMatrix = allocationMatrix(n,n);
+    double** degreeMatrix = allocationMatrix(n,n);
+    int regularMode = 1;
+    formWeightedMatrix(weightedMatrix,observationMatrix,n,d);
+    formDegreeMatrix(degreeMatrix,weightedMatrix,n,regularMode);
+    freeMatrix(weightedMatrix,n);
+    printMatrix2(degreeMatrix,n,n);
+    freeMatrix(degreeMatrix,n);
+
+}
+
+void process_lnorm (double** observationsMatrix, int n, int d){
     int regularMode = 0;
     double** weightedMatrix = allocationMatrix(n,n);
     double** degreeMatrix = allocationMatrix(n,n);
     double** lNormMatrix = allocationMatrix(n,n);
-    
-
-    formWeightedMatrix(weightedMatrix,observation_matrix,n,d);
+    formWeightedMatrix(weightedMatrix,observationsMatrix,n,d);
     formDegreeMatrix(degreeMatrix,weightedMatrix,n,regularMode);
     formLnormMatrix(lNormMatrix, weightedMatrix,degreeMatrix,n);
 
     freeMatrix(weightedMatrix,n);
     freeMatrix(degreeMatrix,n);
 
+    printMatrix2(lNormMatrix,n,n);
+    freeMatrix(lNormMatrix,n);
+
+}
+
+void jaccobi_proccess(double** observationsMatrix, int n, int d){
+
+    int regularMode = 0;
+
+    // double** weightedMatrix = allocationMatrix(n,n);
+    // double** degreeMatrix = allocationMatrix(n,n);
+    // double** lNormMatrix = allocationMatrix(n,n);
+    // formWeightedMatrix(weightedMatrix,observation_matrix,n,d);
+    // formDegreeMatrix(degreeMatrix,weightedMatrix,n,regularMode);
+    // formLnormMatrix(lNormMatrix, weightedMatrix,degreeMatrix,n);
+    // freeMatrix(weightedMatrix,n);
+    // freeMatrix(degreeMatrix,n);
+
     double** eigenVectors = allocationMatrix(n,n);
-    jaccobiAlgorithm(eigenVectors,lNormMatrix,n);
+    // double* eigenValues = calloc(n, sizeof(double));
 
-    // printMatrix2(eigenVectors,n,n);
+    jaccobiAlgorithm(eigenVectors,observationsMatrix,n);
 
-    // 0.7071,-0.0065,-0.0121,0.7070
-    // 0.0013,0.7072,0.7068,0.0173
-    // -0.0004,-0.7070,0.7072,0.0061
-    // -0.7071,-0.0047,-0.0112,0.7070
-
-    // freeMatrix(lNormMatrix,n);
-    // freeMatrix(eigenVectors,n);
+    printMatrix2(eigenVectors,n,n);
+    // free(eigenValues);
+    freeMatrix(eigenVectors,n);
 
     return;
 
@@ -590,13 +631,19 @@ void jaccobi_proccess(double** observation_matrix, int n, int d){
  * @param len len of eingevalues.
  * @return int - k 
  */
+
+ int cmpfunc (const void * a, const void * b) {
+   return ( *(double*)a - *(double*)b );
+}
+
 int TheEigengapHeuristic(double* eigenValues, int lenOfArr) {
 
     int index=0;
     double maxDelta = 0;
     double delta = 0;
     int i;
-    qsort(eigenValues,lenOfArr, sizeof(double),doubleCmpr);
+    
+    qsort(eigenValues,lenOfArr, sizeof(double), cmpfunc);
     for(i=1; i<=(lenOfArr/2);i++)
     {
         delta = eigenValues[i]-eigenValues[i-1];
@@ -623,11 +670,42 @@ int main(int argc, char *argv[]){ // Guy
     
     flow = argv[2];
     input  = argv[3];
-    
+
     n = getlines(input);
     d = getDimention(input);
     observationsMatrix = formInputToMatrix(input, n,d);
-    jaccobi_proccess(observationsMatrix,n,d);
+    //jaccobi_proccess(observationsMatrix,n,d);
+
+    switch(convertStringIntoGoalEnum(flow)){
+
+        case 0:
+            break;
+
+        case 1:
+            process_wam(observationsMatrix,n,d);
+            break;
+
+        case 2:
+            process_ddg(observationsMatrix,n,d);
+            break;
+
+        case 3:
+            process_lnorm(observationsMatrix,n,d);
+            break;
+
+        case 4:
+            jaccobi_proccess(observationsMatrix,n,d);
+            break;
+        
+        default:
+            break;
+
+
+    }//
+
+    freeMatrix(observationsMatrix,n);
+    
+    
     return 0;
 
 }
