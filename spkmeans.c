@@ -701,7 +701,7 @@ int main(int argc, char *argv[]){ // Guy
             break;
 
 
-    }
+    }//
 
     freeMatrix(observationsMatrix,n);
     
