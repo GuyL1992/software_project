@@ -276,12 +276,21 @@ int i=0,j=0;
         for(j=0;j<n;j++)
         {
             if (i!=j)
+<<<<<<< Updated upstream
             {
                 lNormMatrix[i][j] = -lNormMatrix[i][j];
                 
             }
             else
             {
+=======
+            {
+                lNormMatrix[i][j] = -lNormMatrix[i][j];
+                
+            }
+            else
+            {
+>>>>>>> Stashed changes
                 lNormMatrix[i][i] = 1 - lNormMatrix[i][i];
             }
         }
@@ -303,34 +312,57 @@ void formRotaionMatrix(double** P ,double** A,double** matrixV, int n){
     double t;
     double theta;
     double sign;
-
-
+    
+    
 
     for (i = 0; i < n; i++){ // change for n / 2;
         for(j = 0; j < n; j++){
             if(fabs(A[i][j]) > fabs(maxValue) && i != j ){
+                
                 maxRow = i;
                 maxCol = j;
                 maxValue = A[maxRow][maxCol];
             }
+            
         }
+<<<<<<< Updated upstream
     }
+=======
+>>>>>>> Stashed changes
 
+        
+    }
+    
+    
     // theta = (A[maxCol][maxCol] - A[maxRow][maxRow]) / (2 * A[maxRow][maxCol]);
     // sign = theta < 0 ? : 1;
     // t = sign / (fabs(theta) + sqrt(pow(theta,2) + 1));
     // c = 1 / (sqrt(pow(t, 2) + 1));
     // s = t * c;
 
+<<<<<<< Updated upstream
     double tetha, signTetha, absTetha;
     
     tetha = (A[j][j]-A[i][i])/(2*A[i][j]);
+=======
+<<<<<<< HEAD
+    
+    
+    tetha = (A[maxCol][maxCol]-A[maxRow][maxRow])/(2*A[maxRow][maxCol]);
+=======
+    double tetha, signTetha, absTetha;
+    printf("dd");
+    printf( "%f", A[j][j]);
+    tetha = (A[j][j]-A[i][i])/(2*A[i][j]);
+    
+>>>>>>> 59e1175 (yair)
+>>>>>>> Stashed changes
     (tetha<0) ? (signTetha = -1) : (signTetha=1);
     (tetha<0) ? (absTetha = -tetha) : (absTetha = tetha);
     t = signTetha / (absTetha + pow((pow(tetha,2)+1),0.5));
     c = 1/(pow((pow(t,2)+1),0.5));
     s = t*(c);
-
+    
    
 
     for (i = 0; i < n; i++){ // fill in the new  rotation matrix 
@@ -347,6 +379,8 @@ void formRotaionMatrix(double** P ,double** A,double** matrixV, int n){
                 P[i][j] = 0;
 
         }
+        
+
     }
 
     double *Icol, *Jcol;
@@ -375,6 +409,7 @@ void formRotaionMatrix(double** P ,double** A,double** matrixV, int n){
         }
     }
 
+<<<<<<< Updated upstream
     matrixA[i][i] = pow(c,2)*Icol[i] + pow(s,2)*Jcol[j] - 2 * s * c * Jcol[i];
     matrixA[j][j] = pow(s,2) *Icol[i] + pow(c,2) * Jcol[j] + 2 * s * c * Jcol[i];
     matrixA[i][j] = 0;
@@ -387,6 +422,13 @@ void formRotaionMatrix(double** P ,double** A,double** matrixV, int n){
     assert(Icol!=NULL && "An Error Has Occured");
     Jcol = calloc(n,sizeof(double));
     assert(Jcol!=NULL && "An Error Has Occured");
+=======
+    A[i][i] = pow(c,2)*Icol[i] + pow(s,2)*Jcol[j] - 2 * s * c * Jcol[i];
+    A[j][j] = pow(s,2) *Icol[i] + pow(c,2) * Jcol[j] + 2 * s * c * Jcol[i];
+    A[i][j] = 0;
+    A[j][i] = 0;
+    
+>>>>>>> Stashed changes
 
     for (r=0;r<n;r++)
     {
@@ -489,13 +531,14 @@ void jaccobiAlgorithm (double** eigenVectors,double** observationsMatrix , int n
     double** helperPointer;
     double** temp = allocationMatrix(n,n);
     double** Atag = allocationMatrix(n,n);
-
+    
 
 
     formIdentityMatrix(V,n); // first: V equal to the Identity matrix 
-
+    
     do{
         offA = offAtag;
+        
         formRotaionMatrix(P,A,V,n);
         // multiplyMatrix(temp,V,P,n);
         // copyMatrix(V,temp,n);
@@ -513,11 +556,21 @@ void jaccobiAlgorithm (double** eigenVectors,double** observationsMatrix , int n
 
 
     } while(stopCondition && iteration<100);
+<<<<<<< Updated upstream
 
     printMatrix2(V,n,n);
+=======
+<<<<<<< HEAD
+=======
+
+
+    printMatrix2(V,n,n);
+>>>>>>> 59e1175 (yair)
+>>>>>>> Stashed changes
     
     freeMatrix(temp,n);
     freeMatrix(P,n);
+    
 
     return;
  
@@ -555,7 +608,66 @@ void freeMatrix(double** matrix,int n){
     return;
 }
    
+<<<<<<< Updated upstream
 
+=======
+void first_k_colums(double** T, double** eigenVectors,int n,int k){
+    int i;
+    int j;
+
+    for(i=0; i < n; i++){
+        for(j=0; j <k; j++){
+            T[i][j] = eigenVectors[i][j];
+        }
+    }
+}
+
+void normelize_matrix(double** matrix, int n, int d){
+    int i;
+    int j;
+    double s;
+
+    double* rows_sums = calloc(n, sizeof(double));
+
+    for(i=0; i < n; i++){
+        s = 0;
+        for(j=0; j < d; j++){
+            s+= matrix[i][j] * matrix[i][j];
+        }
+        rows_sums[i] = s;
+    }
+
+
+    for(i=0; i < n; i++){
+        for(j=0; j <d; j++){
+            matrix[i][j] = matrix[i][j] / sqrt(rows_sums[i]);
+        }
+    }
+
+    free(rows_sums);
+    return;
+
+}
+/**
+ * @brief This function determine the number of cluskers k. k is the max gap between two 
+ * following eingevalues, until half of the values.
+ * 
+ * @param eigenValues 
+ * @param len len of eingevalues.
+ * @return int - k 
+ */
+
+ int cmpfunc (const void * a, const void * b) {
+     int result = 0;
+     if (*(double*)a == *(double*)b)
+        return result;
+
+    result = *(double*)a < *(double*)b ? -1 : 1;
+    return result;
+ }
+
+int TheEigengapHeuristic(double* eigenValues, int lenOfArr) {
+>>>>>>> Stashed changes
 
 
 void process_wam(double** observationMatrix, int n, int d){
@@ -608,7 +720,22 @@ void jaccobi_proccess(double** observationsMatrix, int n, int d){
     // freeMatrix(degreeMatrix,n);
 
     double** eigenVectors = allocationMatrix(n,n);
+<<<<<<< Updated upstream
     // double* eigenValues = calloc(n, sizeof(double));
+=======
+<<<<<<< HEAD
+    double* eigenValues = (double*) calloc (n,sizeof(double));
+    jaccobiAlgorithm(eigenVectors,A,n);
+    eigenVectors = getTransposeMatrix(eigenVectors,n);
+    fill_with_diagonal(eigenValues,A,n);
+    
+    print_row_vector(eigenValues,n);
+=======
+    // double* eigenValues = calloc(n, sizeof(double));
+    jaccobiAlgorithm(eigenVectors,observationsMatrix,n);
+
+    printMatrix2(eigenVectors,n,n);
+>>>>>>> Stashed changes
 
     jaccobiAlgorithm(eigenVectors,observationsMatrix,n);
 
@@ -620,8 +747,24 @@ void jaccobi_proccess(double** observationsMatrix, int n, int d){
 
 }
 
+<<<<<<< Updated upstream
      
 
+=======
+void spk_proccess(double** observations, int n, int d, int k){
+    int regularMode = 0;
+    double** weightedMatrix = allocationMatrix(n,n);
+    double** degreeMatrix = allocationMatrix(n,n);
+    double** lNormMatrix = allocationMatrix(n,n);
+    double** T;
+    double** centroids;
+    formWeightedMatrix(weightedMatrix,observations,n,d);
+    formDegreeMatrix(degreeMatrix,weightedMatrix,n,regularMode);
+    formLnormMatrix(lNormMatrix, weightedMatrix,degreeMatrix,n);
+     
+    freeMatrix(weightedMatrix,n);
+    freeMatrix(degreeMatrix,n);
+>>>>>>> Stashed changes
 
 /**
  * @brief This function determine the number of cluskers k. k is the max gap between two 
@@ -638,6 +781,7 @@ void jaccobi_proccess(double** observationsMatrix, int n, int d){
 
 int TheEigengapHeuristic(double* eigenValues, int lenOfArr) {
 
+<<<<<<< Updated upstream
     int index=0;
     double maxDelta = 0;
     double delta = 0;
@@ -657,6 +801,11 @@ int TheEigengapHeuristic(double* eigenValues, int lenOfArr) {
 }
 
 
+=======
+    
+    
+}
+>>>>>>> Stashed changes
 
 int main(int argc, char *argv[]){ // Guy
 
@@ -666,11 +815,33 @@ int main(int argc, char *argv[]){ // Guy
     int d;
     int n;
     int sizeofvector;
+<<<<<<< Updated upstream
     double ** observationsMatrix;
     
     flow = argv[2];
     input  = argv[3];
+=======
+    double ** observationsMatrix;   
+    
+    if (argc == 4){
+        k = atoi(argv[1]);
+    flow = argv[2];
+    input  = argv[3];
+    }
+    else{
+        k = 0;
+        flow = argv[1];
+        input  = argv[2];
+    }
+    
+    
+<<<<<<< HEAD
+>>>>>>> Stashed changes
 
+=======
+    flow = argv[2];
+    input  = argv[3];
+>>>>>>> 59e1175 (yair)
     n = getlines(input);
     d = getDimention(input);
     observationsMatrix = formInputToMatrix(input, n,d);
