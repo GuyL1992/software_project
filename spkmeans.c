@@ -313,18 +313,20 @@ void formRotaionMatrix(double** P ,double** A,double** V, int n){
     double t;
     double tetha, signTetha, absTetha;
     double sign;
-
-
+    
+    
 
     for (i = 0; i < n; i++){ // change for n / 2;
         for(j = 0; j < n; j++){
             if(fabs(A[i][j]) > fabs(maxValue) && i != j ){
+                
                 maxRow = i;
                 maxCol = j;
                 maxValue = A[maxRow][maxCol];
             }
+            
         }
-    } //maxRow maxCol 
+    }
 
     // theta = (A[maxCol][maxCol] - A[maxRow][maxRow]) / (2 * A[maxRow][maxCol]);
     // sign = theta < 0 ? : 1;
@@ -332,15 +334,15 @@ void formRotaionMatrix(double** P ,double** A,double** V, int n){
     // c = 1 / (sqrt(pow(t, 2) + 1));
     // s = t * c;
 
+    double tetha, signTetha, absTetha;
     
-    
-    tetha = (A[maxCol][maxCol]-A[maxRow][maxRow])/(2*A[maxRow][maxCol]);
+    tetha = (A[j][j]-A[i][i])/(2*A[i][j]);
     (tetha<0) ? (signTetha = -1) : (signTetha=1);
     (tetha<0) ? (absTetha = -tetha) : (absTetha = tetha);
     t = signTetha / (absTetha + pow((pow(tetha,2)+1),0.5));
     c = 1/(pow((pow(t,2)+1),0.5));
     s = t*(c);
-
+    
    
 
     for (i = 0; i < n; i++){ // fill in the new  rotation matrix 
@@ -357,6 +359,8 @@ void formRotaionMatrix(double** P ,double** A,double** V, int n){
                 P[i][j] = 0;
 
         }
+        
+
     }
 
     double *Icol, *Jcol;// -> maxCol, maxRow 
@@ -386,12 +390,19 @@ void formRotaionMatrix(double** P ,double** A,double** V, int n){
         }
     }
 
-    A[i][i] = pow(c,2)*Icol[i] + pow(s,2)*Jcol[j] - 2 * s * c * Jcol[i];
-    A[j][j] = pow(s,2) *Icol[i] + pow(c,2) * Jcol[j] + 2 * s * c * Jcol[i];
-    A[i][j] = 0;
-    A[j][i] = 0;
+    matrixA[i][i] = pow(c,2)*Icol[i] + pow(s,2)*Jcol[j] - 2 * s * c * Jcol[i];
+    matrixA[j][j] = pow(s,2) *Icol[i] + pow(c,2) * Jcol[j] + 2 * s * c * Jcol[i];
+    matrixA[i][j] = 0;
+    matrixA[j][i] = 0;
     
-    
+    free(Icol);
+    free(Jcol);
+
+    Icol = calloc(n,sizeof(double));
+    assert(Icol!=NULL && "An Error Has Occured");
+    Jcol = calloc(n,sizeof(double));
+    assert(Jcol!=NULL && "An Error Has Occured");
+
     for (r=0;r<n;r++)
     {
         Icol[r] = V[r][i];
@@ -493,13 +504,14 @@ void jaccobiAlgorithm (double** V,double** A, int n){
     double** helperPointer;
     double** temp = allocationMatrix(n,n);
     double** Atag = allocationMatrix(n,n);
-
+    
 
 
     formIdentityMatrix(V,n); // first: V equal to the Identity matrix 
-
+    
     do{
         offA = offAtag;
+        
         formRotaionMatrix(P,A,V,n);
         // multiplyMatrix(temp,V,P,n);
         // copyMatrix(V,temp,n);
@@ -517,9 +529,12 @@ void jaccobiAlgorithm (double** V,double** A, int n){
 
 
     } while(stopCondition && iteration<100);
+
+    printMatrix2(V,n,n);
     
     freeMatrix(temp,n);
     freeMatrix(P,n);
+    
 
     return;
  
@@ -556,6 +571,8 @@ void freeMatrix(double** matrix,int n){
 
     return;
 }
+   
+
 
 void first_k_colums(double** T, double** eigenVectors,int n,int k){
     int i;
@@ -624,27 +641,6 @@ void init_centroids(double** centroids, double** data_points, int k, int d){
 
 int TheEigengapHeuristic(double* eigenValues, int lenOfArr) {
 
-    int index=0;
-    double maxDelta = 0;
-    double delta = 0;
-    int i;
-
-    eigenValues[0] = 3;
-    
-    print_row_vector(eigenValues, lenOfArr);
-    qsort(eigenValues,lenOfArr, sizeof(double), cmpfunc);
-    print_row_vector(eigenValues,lenOfArr);
-    for(i=1; i<=(lenOfArr/2);i++)
-    {
-        delta = eigenValues[i]-eigenValues[i-1];
-        if (delta > maxDelta){
-            maxDelta = delta;
-            index = i;
-        }
-    }
-    
-    return index;
-}
 
 /*Processes Functions - used for complete Process according to the User Input*/
 
@@ -698,12 +694,10 @@ void jacobiProcess(double** A, int n, int d){
     // freeMatrix(degreeMatrix,n);
 
     double** eigenVectors = allocationMatrix(n,n);
-    double* eigenValues = (double*) calloc (n,sizeof(double));
-    jaccobiAlgorithm(eigenVectors,A,n);
-    eigenVectors = getTransposeMatrix(eigenVectors,n);
-    fill_with_diagonal(eigenValues,A,n);
-    
-    print_row_vector(eigenValues,n);
+    // double* eigenValues = calloc(n, sizeof(double));
+
+    jaccobiAlgorithm(eigenVectors,observationsMatrix,n);
+
     printMatrix2(eigenVectors,n,n);
 
     freeMatrix(eigenVectors,n);
@@ -813,6 +807,10 @@ int main(int argc, char *argv[]){
         flow = argv[1];
         input  = argv[2];
     }
+    double ** observationsMatrix;
+    
+    flow = argv[2];
+    input  = argv[3];
 
     n = getObservationsNum(input);
     d = getDimention(input);
