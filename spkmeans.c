@@ -3,9 +3,10 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
-//#include "spkmeans.h"
-//#include "kmeans.c"
+// #include "spkmeans.h"
+#include "kmeans.c"
 
+void freeMatrix(double** matrix,int n);
 int convertStringIntoGoalEnum(char* UserGoal)
 {
     if (!strcmp(UserGoal,"spk"))
@@ -25,8 +26,7 @@ int convertStringIntoGoalEnum(char* UserGoal)
     };
 }
 double** allocationMatrix(int n, int d);
-void freeMatrix(double** matrix,int n);
-int getlines(char arr[]) {  
+int getObservationsNum(char arr[]) {  
     
     char ch;
     int lines =0;
@@ -94,7 +94,7 @@ int getDimention(char arr[]){
  * @return double** - the matrix represents the n vectors 
  */
  
-double** formInputToMatrix(char* input, int n, int d){ //Guy
+double** getObservationsFromInput(char* input, int n, int d){ //Guy
     int i = 0;
     int j = 0;
     int cnt = 0;
@@ -574,19 +574,88 @@ void freeMatrix(double** matrix,int n){
    
 
 
+void first_k_colums(double** T, double** eigenVectors,int n,int k){
+    int i;
+    int j;
 
-void process_wam(double** observationMatrix, int n, int d){
+    for(i=0; i < n; i++){
+        for(j=0; j <k; j++){
+            T[i][j] = eigenVectors[i][j];
+        }
+    }
+}
+
+void normelize_matrix(double** matrix, int n, int d){
+    int i;
+    int j;
+    double s;
+
+    double* rows_sums = calloc(n, sizeof(double));
+
+    for(i=0; i < n; i++){
+        s = 0;
+        for(j=0; j < d; j++){
+            s+= matrix[i][j] * matrix[i][j];
+        }
+        rows_sums[i] = s;
+    }
+
+
+    for(i=0; i < n; i++){
+        for(j=0; j <d; j++){
+            matrix[i][j] = matrix[i][j] / sqrt(rows_sums[i]);
+        }
+    }
+
+    free(rows_sums);
+    return;
+
+}
+
+void init_centroids(double** centroids, double** data_points, int k, int d){
+    int i, j;
+
+    for (i = 0; i < k; i ++){
+        for(j = 0; j < d; j ++){
+            centroids[i][j] = data_points[i][j];
+        }
+    }
+}
+/**
+ * @brief This function determine the number of cluskers k. k is the max gap between two 
+ * following eingevalues, until half of the values.
+ * 
+ * @param eigenValues 
+ * @param len len of eingevalues.
+ * @return int - k 
+ */
+
+ int cmpfunc (const void * a, const void * b) {
+     int result = 0;
+     if (*(double*)a == *(double*)b)
+        return result;
+
+    result = *(double*)a < *(double*)b ? -1 : 1;
+    return result;
+ }
+
+int TheEigengapHeuristic(double* eigenValues, int lenOfArr) {
+
+
+/*Processes Functions - used for complete Process according to the User Input*/
+
+void wamProcess(double** observations, int n, int d){
     double** weightedMatrix = allocationMatrix(n,n);
-    formWeightedMatrix(weightedMatrix,observationMatrix,n,d);
+    formWeightedMatrix(weightedMatrix,observations,n,d);
     printMatrix2(weightedMatrix,n,n);
     freeMatrix(weightedMatrix,n);
 }
 
-void process_ddg (double** observationMatrix, int n, int d){
+void ddgProcess (double** observations, int n, int d){
     double** weightedMatrix = allocationMatrix(n,n);
     double** degreeMatrix = allocationMatrix(n,n);
     int regularMode = 1;
-    formWeightedMatrix(weightedMatrix,observationMatrix,n,d);
+    formWeightedMatrix(weightedMatrix,observations,n,d);
     formDegreeMatrix(degreeMatrix,weightedMatrix,n,regularMode);
     freeMatrix(weightedMatrix,n);
     printMatrix2(degreeMatrix,n,n);
@@ -594,12 +663,12 @@ void process_ddg (double** observationMatrix, int n, int d){
 
 }
 
-void process_lnorm (double** observationsMatrix, int n, int d){
+void lnormProcess (double** observations, int n, int d){
     int regularMode = 0;
     double** weightedMatrix = allocationMatrix(n,n);
     double** degreeMatrix = allocationMatrix(n,n);
     double** lNormMatrix = allocationMatrix(n,n);
-    formWeightedMatrix(weightedMatrix,observationsMatrix,n,d);
+    formWeightedMatrix(weightedMatrix,observations,n,d);
     formDegreeMatrix(degreeMatrix,weightedMatrix,n,regularMode);
     formLnormMatrix(lNormMatrix, weightedMatrix,degreeMatrix,n);
 
@@ -611,7 +680,7 @@ void process_lnorm (double** observationsMatrix, int n, int d){
 
 }
 
-void jaccobi_proccess(double** A, int n, int d){
+void jacobiProcess(double** A, int n, int d){
 
     int regularMode = 0;
 
@@ -637,13 +706,15 @@ void jaccobi_proccess(double** A, int n, int d){
 
 }
 
-void spk_proccess(double** observations, int n, int d, int k){
+double** getDataPoints(double** observations, int n, int d, int k){
+
     int regularMode = 0;
     double** weightedMatrix = allocationMatrix(n,n);
     double** degreeMatrix = allocationMatrix(n,n);
     double** lNormMatrix = allocationMatrix(n,n);
     double** T;
     double** centroids;
+    int epsilon = pow(10,-15);
     formWeightedMatrix(weightedMatrix,observations,n,d);
     formDegreeMatrix(degreeMatrix,weightedMatrix,n,regularMode);
     formLnormMatrix(lNormMatrix, weightedMatrix,degreeMatrix,n);
@@ -662,18 +733,61 @@ void spk_proccess(double** observations, int n, int d, int k){
     k = (k == 0) ? TheEigengapHeuristic(eigenValues, n) : k;
     T = allocationMatrix(n,k);
     first_k_colums(T,eigenVectors,n,k);
+
+    freeMatrix(eigenVectors,n);
+
     normelize_matrix(T,n,k);
+
+    return T;
+
+}
+
+void spkProcess(double** observations, int n, int d, int k){// NOT NEEDED !
+    // int regularMode = 0;
+    // double** weightedMatrix = allocationMatrix(n,n);
+    // double** degreeMatrix = allocationMatrix(n,n);
+    // double** lNormMatrix = allocationMatrix(n,n);
+    double** T;
+    double** centroids;
+    int epsilon = pow(10,-15);
+    // formWeightedMatrix(weightedMatrix,observations,n,d);
+    // formDegreeMatrix(degreeMatrix,weightedMatrix,n,regularMode);
+    // formLnormMatrix(lNormMatrix, weightedMatrix,degreeMatrix,n);
+
+    // freeMatrix(weightedMatrix,n);
+    // freeMatrix(degreeMatrix,n);
+
+    // double** eigenVectors = allocationMatrix(n,n);
+    // double* eigenValues = (double*) calloc (n,sizeof(double));
+
+    // jaccobiAlgorithm(eigenVectors,lNormMatrix,n);
+    // eigenVectors = getTransposeMatrix(eigenVectors,n);
+    // fill_with_diagonal(eigenValues,lNormMatrix,n);
+    // freeMatrix(lNormMatrix,n);
+
+    T = getDataPoints(observations,n,d,k);
+
+    // k = (k == 0) ? TheEigengapHeuristic(eigenValues, n) : k;
+    // T = allocationMatrix(n,k);
+    // first_k_colums(T,eigenVectors,n,k);
+
+    // freeMatrix(eigenVectors,n);
+
+    // normelize_matrix(T,n,k);
     // T - > t transopse
     centroids = allocationMatrix(k,k);
+    // init_centroids(centroids,T,k,k);
     printMatrix2(T,n,k);
-    //kmeans(centroids,T);
+    printf("%s\n", "guylamdan");
+    printMatrix2(centroids,k,k);
+    calculateKCentroids(k,300,centroids,T,n,k,epsilon);
 
 
 
 
 }
 
-int main(int argc, char *argv[]){ // Guy
+int main(int argc, char *argv[]){ 
 
     int k;
     char* input ;
@@ -681,49 +795,54 @@ int main(int argc, char *argv[]){ // Guy
     int d;
     int n;
     int sizeofvector;
+    double ** observations;
+
+    if (argc == 4){
+        k = atoi(argv[1]);
+        flow = argv[2];
+        input  = argv[3];
+    }
+    else{
+        k = 0;
+        flow = argv[1];
+        input  = argv[2];
+    }
     double ** observationsMatrix;
     
     flow = argv[2];
     input  = argv[3];
 
-    n = getlines(input);
+    n = getObservationsNum(input);
     d = getDimention(input);
-    observationsMatrix = formInputToMatrix(input, n,d);
-    //jaccobi_proccess(observationsMatrix,n,d);
+    observations= getObservationsFromInput(input, n,d);
 
-    switch(convertStringIntoGoalEnum(flow)){
+    switch(convertStringIntoGoalEnum(flow)){ 
 
-        case 0:
-            spk_proccess(observationsMatrix,n,d,k);
+        case 0: // NOT NEEDED
+            spkProcess(observations,n,d,k);
             break;
 
         case 1:
-            process_wam(observationsMatrix,n,d);
+            wamProcess(observations,n,d);
             break;
 
         case 2:
-            process_ddg(observationsMatrix,n,d);
+            ddgProcess(observations,n,d);
             break;
 
         case 3:
-            process_lnorm(observationsMatrix,n,d);
+            lnormProcess(observations,n,d);
             break;
 
         case 4:
-            jaccobi_proccess(observationsMatrix,n,d);
+            jacobiProcess(observations,n,d);
             break;
         
         default:
             break;
-
-
     }
-
-    freeMatrix(observationsMatrix,n);
-    
-    
+    freeMatrix(observations,n);
     return 0;
-
 }
 
 
